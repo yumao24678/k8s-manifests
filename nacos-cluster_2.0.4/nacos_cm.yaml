@@ -1,0 +1,20 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nacos
+  namespace: nacos
+data:
+  # 基础配置
+  NACOS_APPLICATION_PORT: "8848"
+  NACOS_SERVER_PORT: "8848"
+  SPRING_DATASOURCE_PLATFORM: mysql
+  MYSQL_DATABASE_NUM: "1"
+  PREFER_HOST_MODE: hostname
+  TZ: Asia/Shanghai
+  # 数据库配置
+  MYSQL_SERVICE_HOST: "10.148.0.2"
+  MYSQL_SERVICE_PORT: "3306"
+  MYSQL_SERVICE_DB_NAME: nacos_config
+  # JVM 配置
+  JVM_XMS: 1g
+  JVM_XMX: 1g

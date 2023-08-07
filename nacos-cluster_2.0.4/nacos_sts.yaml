@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nacos
+  namespace: nacos
+spec:
+  selector:
+    matchLabels:
+      app: nacos
+  serviceName: nacos-headless
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: nacos
+        monitor: nacos
+      annotations:
+        prometheus.io/path: /nacos/v1/console/health/readinessactuator/prometheus
+        prometheus.io/port: "8848"
+    spec:
+      terminationGracePeriodSeconds: 60
+      # statefulset 不支持使用 Never 只支持 Always
+      restartPolicy: Always
+      containers:
+        - name: nacos
+          image: nacos/nacos-server:v2.0.4
+          envFrom:
+            - configMapRef:
+                name: nacos
+            - secretRef:
+                name: nacos
+          env:
+            # - 指定集群各个节点的地址，如果没有配置 DOMAIN_NAME SERVICE_NAME 和 POD_NAMESPACE 
+            # 环境变量则必须指定每个 nacos 节点的完整域名，例如:
+            # nacos-0.nacos-headless.nacos.svc.cluster.local:8848
+            - name: NACOS_SERVERS
+              value: >-
+                nacos-0.nacos-headless.nacos.svc.cluster.local:8848
+                nacos-1.nacos-headless.nacos.svc.cluster.local:8848
+                nacos-2.nacos-headless.nacos.svc.cluster.local:8848
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "3"
+              memory: "2Gi"
+          startupProbe:
+            httpGet:
+              path: /nacos/v1/console/health/readiness
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 60
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /nacos/v1/console/health/readiness
+              port: http
+              scheme: HTTP
+            # initialDelaySeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: http
+            # initialDelaySeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 10
+          ports:
+            - name: http
+              containerPort: 8848
+            - name: cluster
+              containerPort: 7848
+            # 端口名不能超过 15 个字符，否则会报错
+            - name: grpc-client
+              containerPort: 9848
+            - name: grpc-server
+              containerPort: 9849
+          volumeMounts:
+            - name: localtime
+              mountPath: /etc/localtime
+              readOnly: true
+            # pvc 模板创建的 pvc 会自动挂载到 pod 对应的 volumeMounts 配置上，无需在 volumes 配置中再声明一次
+            - name: data-storage
+              mountPath: /home/nacos/data
+              subPath: data
+            - name: data-storage
+              mountPath: /home/nacos/logs
+              subPath: logs
+            - mountPath: /home/nacos/plugins
+              name: data-storage
+              subPath: plugins
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /usr/share/zoneinfo/Asia/Shanghai
+  volumeClaimTemplates: 
+    - metadata:
+        name: data-storage
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        # 不指定存储类，使用默认存储类创建 pvc 模板申请的 pvc
+        # storageClassName: "nfs-storage"
+        resources:
+          requests:
+            storage: 50Gi

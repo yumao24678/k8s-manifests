@@ -1,0 +1,8 @@
+namespace: nacos
+resources:
+  - "nacos_cm.yaml"
+  - "nacos_ns.yaml"
+  - "nacos_secret.yaml"
+  - "nacos_sts.yaml"
+  - "nacos_svc.yaml"
+  - "nacos-headless_svc.yaml"
