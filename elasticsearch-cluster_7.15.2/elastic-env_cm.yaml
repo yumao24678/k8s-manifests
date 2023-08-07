@@ -1,0 +1,19 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: elastic-env
+  namespace: elasticsearch
+data:
+  cluster.name: es-cluster-01
+  # 将 bootstrap.memory_lock 设置为 false 可以避免配置 containerd 或 docker 的 memlock limit
+  # 适用于无法修改容器运行时资源限制的环境
+  bootstrap.memory_lock: "false"
+  network.host: 0.0.0.0
+  http.port: "9200"
+  transport.port: "9300"
+  cluster.initial_master_nodes: >-
+    elasticsearch-master-0,elasticsearch-master-1,elasticsearch-master-2
+  discovery.seed_hosts: elasticsearch-master-headless
+  HTTP_CORS_ENABLED: "true"
+  HTTP_CORS_ALLOW-ORIGIN: "*"
+  ES_JAVA_OPTS: "-Xms1332M -Xmx1332M"

@@ -1,0 +1,7 @@
+namespace: elasticsearch
+resources:
+  - elastic_headless-svc.yaml
+  - elastic_ns.yaml
+  - elastic_sts.yaml
+  - elastic_svc.yaml
+  - elastic-env_cm.yaml
