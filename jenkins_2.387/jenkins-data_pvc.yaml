@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-data
+  namespace: devops-tools
+  labels:
+    app: jenkins-server
+spec:
+  # 使用指定存储类动态创建 pv ( 如果没有动态存储类需要手动创建同等容量的 pv 自动关联 )
+  # storageClassName: nfs-storage   ## 不配置存储类使用默认存储类
+  accessModes:
+    - ReadWriteOnce  ## RWO, 单个 pod 读写
+  resources:
+    requests:
+      storage: 50Gi

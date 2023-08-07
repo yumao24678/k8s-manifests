@@ -1,0 +1,28 @@
+# 用于 cicd 步骤的 sa 账户, 对应 secret 可以生成永久 token 在 cicd 步骤中操作集群
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cicd
+  namespace: kube-system
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cicd
+subjects:
+  - kind: ServiceAccount
+    name: cicd
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cicd
+  namespace: kube-system
+  annotations:
+    kubernetes.io/service-account.name: "cicd"
+type: kubernetes.io/service-account-token
