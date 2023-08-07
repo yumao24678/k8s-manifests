@@ -1,0 +1,3 @@
+resources:
+  - rocketmq-dashboard_deployment.yaml
+  - rocketmq-dashboard_service.yaml

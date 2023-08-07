@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rocketmq-dashboard
+  namespace: rocketmq
+  labels:
+    app: rocketmq-dashboard
+spec:
+  selector:
+    matchLabels:
+      app: rocketmq-dashboard
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: rocketmq-dashboard
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: rocketmq-dashboard
+        image: apacherocketmq/rocketmq-dashboard:1.0.0
+        env:
+          - name: JAVA_OPTS
+            value: >-
+              -Drocketmq.namesrv.addr=rocketmq-nameserver-0.rocketmq-nameserver-headless:9876;rocketmq-nameserver-1.rocketmq-nameserver-headless:9876;rocketmq-nameserver-2.rocketmq-nameserver-headless:9876
+              -Dcom.rocketmq.sendMessageWithVIPChannel=false
+              -Xms256M
+              -Xmx512M
+        resources:
+          requests:
+            cpu: 10m
+            memory: 10Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+        startupProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 60
+          periodSeconds: 5
+        livenessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 1
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+          periodSeconds: 5
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 1
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+          periodSeconds: 5
+        ports:
+          - name: http-8080
+            containerPort: 8080
+        volumeMounts:
+          - name: localtime
+            mountPath: /etc/localtime
+            readOnly: true
+          - name: tmp
+            mountPath: /tmp
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /usr/share/zoneinfo/Asia/Shanghai
+        - name: tmp
+          emptyDir: {}

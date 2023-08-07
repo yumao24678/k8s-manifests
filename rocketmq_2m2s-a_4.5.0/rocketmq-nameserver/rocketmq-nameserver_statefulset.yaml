@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rocketmq-nameserver
+  namespace: rocketmq
+spec:
+  selector:
+    matchLabels:
+      app: rocketmq-nameserver
+  # 有状态副本可以指定一个常规的带有 ClusterIP 的服务，依旧可以使用 ${pod名}.${服务名}.${名称空间}
+  #   进行访问，只是服务也会被分配一个 ip 地址，会对代理的有状态副本进行负载均衡，而不是解析出所有代理服务的子 dns
+  #   和 ip. 
+  # nameserver 使用多节点部署，无需使用无头服务对其进行记录，使用 clusterip 或 nodeport 还可以让其实现负载均衡，所以无需无头服务
+  # 以上结论在自建集群中可以实现，但在云厂商的集群中个别云厂商无法支持，例如谷歌云的 gke 集群必须使用无头服务才能通过 dns 访问 pod
+  serviceName: rocketmq-nameserver-headless
+  replicas: 3
+  updateStrategy:
+    type: RollingUpdate
+  # StatefulSet 部署策略默认为 OrderedReady (有序部署和删除), 修改为 Parallel (并行部署和删除，多个副本之间没有先后启动的依赖关系可以使用), 不会影响更新操作的有序更新
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: rocketmq-nameserver
+    spec:
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - rocketmq-nameserver
+                namespaces:
+                  - rocketmq
+      containers:
+        - name: rocketmq-nameserver
+          image: apache/rocketmq:4.5.0
+          command:
+            - "sh"
+            - "mqnamesrv"
+          env:
+            - name: JAVA_OPT_EXT
+              value: "-server -Xms1G -Xmx2G"  ## 如果启动命令中存储多个相同配置,默认使用靠后的配置,该参数会被追加到系统生成的默认命令参数之后，所以会使用此处的参数 ( 默认参数中会根据系统总内存限制内存大小 )
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "10Mi"
+            limits:
+              cpu: "3000m"
+              memory: "4Gi"
+          startupProbe:
+            tcpSocket:
+              port: 9876
+            initialDelaySeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 60
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 9876
+            initialDelaySeconds: 1
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: 9876
+            initialDelaySeconds: 1
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 5
+          ports:
+            - name: namesrv-9876
+              containerPort: 9876
+          volumeMounts:
+            - name: localtime
+              mountPath: /etc/localtime
+            - name: logs
+              mountPath: /home/rocketmq/logs
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /usr/share/zoneinfo/Asia/Shanghai
+  volumeClaimTemplates:
+    - metadata:
+        name: logs
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        # storageClassName: "my-storage-class"
+        resources:
+          requests:
+            storage: 5Gi

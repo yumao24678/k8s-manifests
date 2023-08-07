@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rocketmq-broker-b-s
+  namespace: rocketmq
+spec:
+  selector:
+    matchLabels:
+      app: rocketmq-broker-b
+      rocketmq-broker-role: slave
+  serviceName: ""
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  # StatefulSet 部署策略默认为 OrderedReady (有序部署和删除), 修改为 Parallel (并行部署和删除，多个副本之间没有先后启动的依赖关系可以使用), 不会影响更新操作的有序更新
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: rocketmq-broker-b
+        rocketmq-broker-role: slave
+    spec:
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      securityContext:
+        fsGroup: 3000
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: rocketmq-broker-role
+                      operator: In
+                      values:
+                        - slave
+                namespaces:
+                  - rocketmq
+      containers:
+        - name: rocketmq-broker-b-s
+          image: apache/rocketmq:4.5.0
+          command:
+            - "sh"
+            - "mqbroker"
+            - "-c"
+            - "/rocketmq-broker-b-s.conf"
+          env:
+            - name: JAVA_OPT_EXT
+              value: "-server -Xms2G -Xmx2G"
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "10Mi"
+            limits:
+              cpu: "5000m"
+              memory: "5Gi"
+          startupProbe:
+            tcpSocket:
+              port: 10909
+            initialDelaySeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 60
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 10909
+            initialDelaySeconds: 1
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: 10909
+            initialDelaySeconds: 1
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 5
+          ports:
+            - name: broker-10909
+              containerPort: 10909
+            - name: broker-10911
+              containerPort: 10911
+            - name: broker-10912
+              containerPort: 10912
+          volumeMounts:
+            - name: localtime
+              mountPath: /etc/localtime
+              readOnly: true
+            - name: broker-config
+              mountPath: /rocketmq-broker-b-s.conf
+              subPath: rocketmq-broker-b-s.conf
+            - name: logs
+              mountPath: /home/rocketmq/logs
+            - name: data
+              mountPath: /home/rocketmq/store
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /usr/share/zoneinfo/Asia/Shanghai
+        - name: broker-config
+          configMap:
+            name: rocketmq-broker-b-cm
+  volumeClaimTemplates:
+    - metadata:
+        name: logs
+      spec:
+        accessModes: 
+          - "ReadWriteOnce"
+        # storageClassName: "my-storage-class"
+        resources:
+          requests:
+            storage: 10Gi
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 50Gi

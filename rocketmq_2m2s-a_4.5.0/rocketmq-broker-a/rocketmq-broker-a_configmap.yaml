@@ -1,0 +1,32 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: rocketmq-broker-a-cm
+  namespace: rocketmq
+data:
+  rocketmq-broker-a-m.conf: |
+    brokerClusterName = DefaultCluster
+    brokerName = broker-a
+    brokerId = 0
+    deleteWhen = 04
+    fileReservedTime = 48
+    brokerRole = ASYNC_MASTER
+    flushDiskType = ASYNC_FLUSH
+    #brokerIP1 = 10.11.12.12
+    #brokerIP1 = 192.168.5.50
+    listenPort = 10911
+    namesrvAddr = rocketmq-nameserver-0.rocketmq-nameserver-headless:9876;rocketmq-nameserver-1.rocketmq-nameserver-headless:9876;rocketmq-nameserver-2.rocketmq-nameserver-headless:9876
+    messageDelayLevel = 1s 5s 10s 30s
+  rocketmq-broker-a-s.conf: |
+    brokerClusterName = DefaultCluster
+    brokerName = broker-a
+    brokerId = 1
+    deleteWhen = 04
+    fileReservedTime = 48
+    brokerRole = SLAVE
+    flushDiskType = ASYNC_FLUSH
+    #brokerIP1 = 10.11.12.12
+    #brokerIP1 = 192.168.5.50
+    listenPort = 10911
+    namesrvAddr = rocketmq-nameserver-0.rocketmq-nameserver-headless:9876;rocketmq-nameserver-1.rocketmq-nameserver-headless:9876;rocketmq-nameserver-2.rocketmq-nameserver-headless:9876
+    messageDelayLevel = 1s 5s 10s 30s

@@ -1,0 +1,8 @@
+namespace: rocketmq
+bases:
+  - rocketmq-broker-a
+  - rocketmq-broker-b
+  - rocketmq-nameserver
+  - rocketmq-dashboard
+resources:
+  - rocketmq_namespace.yaml

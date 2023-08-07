@@ -1,0 +1,4 @@
+resources:
+  - rocketmq-nameserver_service.yaml
+  - rocketmq-nameserver_statefulset.yaml
+  - rocketmq-nameserver-headless_service.yaml

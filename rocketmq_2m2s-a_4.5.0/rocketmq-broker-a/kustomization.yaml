@@ -1,0 +1,4 @@
+resources:
+  - rocketmq-broker-a_configmap.yaml
+  - rocketmq-broker-a-m_statefulset.yaml
+  - rocketmq-broker-a-s_statefulset.yaml
