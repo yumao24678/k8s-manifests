@@ -1,0 +1,7 @@
+namespace: redis-singleone
+resources:
+  - "redis_deploy.yaml"
+  - "redis_svc.yaml"
+  - "redis-cm_cm.yaml"
+  - "redis-data_pvc.yaml"
+  - "redis-singleone_ns.yaml"

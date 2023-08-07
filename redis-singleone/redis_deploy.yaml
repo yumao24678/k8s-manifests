@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: redis-singleone
+  labels:
+    app: redis
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: redis
+          image: redis:6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: "5"
+              memory: 5Gi
+          ports:
+            - containerPort:  80
+              name: redis
+          volumeMounts:
+            - name: localtime
+              mountPath: /etc/localtime
+              readOnly: true
+            - name: redis-conf
+              mountPath: /usr/local/etc/redis/redis.conf
+              subPath: redis.conf
+            - name: redis-data
+              mountPath: /data
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /usr/share/zoneinfo/Asia/Shanghai
+        - name: redis-config
+          configMap:
+            name: redis-cm
+        - name: data
+          persistentVolumeClaim:
+            claimName: redis-data
