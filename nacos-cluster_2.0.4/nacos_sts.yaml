@@ -21,6 +21,21 @@ spec:
       terminationGracePeriodSeconds: 60
       # statefulset 不支持使用 Never 只支持 Always
       restartPolicy: Always
+      affinity:
+        podAntiAffinity:
+          # pod 软反亲和
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - nacos
+                namespaces:
+                  - nacos
       containers:
         - name: nacos
           image: nacos/nacos-server:v2.0.4
